@@ -1,8 +1,9 @@
 import React, { Component } from "react";
-import Axios from "axios";
+import { ToastContainer } from "react-toastify";
+import http from "./services/httpsService";
+import config from "./config.json";
+import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
-
-const apiEndPoint = "https://jsonplaceholder.typicode.com/posts";
 
 class App extends Component {
   state = {
@@ -10,13 +11,13 @@ class App extends Component {
   };
 
   async componentDidMount() {
-    const { data: posts } = await Axios.get(apiEndPoint);
+    const { data: posts } = await http.get(config.apiEndPoint);
     this.setState({ posts });
   }
 
   handleAdd = async () => {
     const obj = { title: "a", body: "b" };
-    const { data: post } = await Axios.post(apiEndPoint, obj);
+    const { data: post } = await http.post(config.apiEndPoint, obj);
 
     const posts = [post, ...this.state.posts];
     this.setState({ posts });
@@ -24,7 +25,7 @@ class App extends Component {
 
   handleUpdate = async (post) => {
     post.title = "updated";
-    await Axios.put(apiEndPoint + "/" + post.id, post);
+    await http.put(config.apiEndPoint + "/" + post.id, post);
     // with patch we can send only the properties that must be updated
     // Axios.patch(apiEndPoint + "/" + post.id, { title: post.title });
 
@@ -40,11 +41,7 @@ class App extends Component {
     const posts = this.state.posts.filter((p) => p.id !== post.id);
     this.setState({ posts });
 
-    try {
-      await Axios.delete("s" + apiEndPoint + "/" + post.id);
-      throw new Error("");
-    } catch (ex) {
-      /* Will be set if we sucessfully submit a request to the server.
+    /* Will be set if we successfully submit a request to the server.
       Otherwise is going to be null.
       ex.request
       This property is set if we sucessfully get a response from
@@ -54,15 +51,14 @@ class App extends Component {
       Expected (404: not found, 400: bad request) / CLIENT ERRORS
       - Display a specific error message */
 
+    // Unexpected (network down, server down, db down, bug)
+    // - Log them
+    // - Display a generic and friendly error message
+    try {
+      await http.delete(config.apiEndPoint + "/" + post.id);
+    } catch (ex) {
       if (ex.response && ex.response.status === 404)
         alert("This post has already been deleted.");
-      else {
-        console.log("Logging the error", ex);
-        alert("Unexpected error");
-      }
-      // Unexpected (network down, server down, db down, bug)
-      // - Log them
-      // - Display a generic and friendly error message
       this.setState({ posts: originalPosts });
     }
   };
@@ -70,6 +66,7 @@ class App extends Component {
   render() {
     return (
       <React.Fragment>
+        <ToastContainer />
         <button className="btn btn-primary" onClick={this.handleAdd}>
           Add
         </button>
